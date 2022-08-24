@@ -1,29 +1,30 @@
-/*
-Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-*/
 package cmd
 
 import (
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
 
+type Result struct{}
+
+var headerVar string
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "GURL",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "CURL alternative",
+	Long:  `Command-line tool for transferring data using various network protocols.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Hello")
+
+		fmt.Println(getData(args[0]))
+
 	},
 }
 
@@ -38,9 +39,36 @@ func Execute() {
 
 func init() {
 
-	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.GURL.yaml)")
+	rootCmd.Flags().StringVarP(&headerVar, "header", "H", "", "Variable for passing header.")
+}
 
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+func getData(url string) (string, error) {
+	request, err := http.NewRequest(
+		http.MethodGet,
+		url,
+		nil,
+	)
+	if err != nil {
+		return "", fmt.Errorf("Could not resolve the URL")
+	}
+
+	if headerVar != "" {
+		headerParts := strings.Split(headerVar, ": ")
+		if len(headerParts) != 2 {
+			return "", fmt.Errorf("Header is not set right.")
+		}
+		headerHead := headerParts[0]
+		headerTail := headerParts[1]
+		request.Header.Add(headerHead, headerTail)
+	}
+
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		return "", fmt.Errorf("Could not resolve the URL")
+	}
+	responseBytes, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return "", fmt.Errorf("Could not resolve the Response")
+	}
+	return string(responseBytes), nil
 }
