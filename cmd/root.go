@@ -13,6 +13,7 @@ import (
 type Result struct{}
 
 var headerVar string
+var protocolVar string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -23,7 +24,18 @@ var rootCmd = &cobra.Command{
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
 
-		fmt.Println(getData(args[0]))
+		switch protocolVar {
+		case "":
+			fmt.Println(getData(args[0]))
+		case "POST":
+			fmt.Println("POST")
+		case "PUT":
+			fmt.Println("PUT")
+		case "GET":
+			fmt.Println(getData(args[0]))
+		default:
+			fmt.Println(fmt.Sprintf("Protocol by the name %s doesn't exist", protocolVar))
+		}
 
 	},
 }
@@ -40,6 +52,7 @@ func Execute() {
 func init() {
 
 	rootCmd.Flags().StringVarP(&headerVar, "header", "H", "", "Variable for passing header.")
+	rootCmd.Flags().StringVarP(&protocolVar, "protocol", "X", "", "Variable to choose protocol.")
 }
 
 func getData(url string) (string, error) {
