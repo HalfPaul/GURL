@@ -16,5 +16,5 @@ func HandleHeaders(header string, request *http.Request) error {
 		headerTail := headerParts[1]
 		request.Header.Add(headerHead, headerTail)
 	}
-
+	return nil
 }
