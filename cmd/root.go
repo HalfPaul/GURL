@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -14,8 +16,9 @@ type Result struct{}
 
 var headerVar string
 var protocolVar string
+var dataVar string
 
-// rootCmd represents the base command when called without any subcommands
+// TODO : Put color into all print statements.
 var rootCmd = &cobra.Command{
 	Use:   "GURL",
 	Short: "CURL alternative",
@@ -28,7 +31,10 @@ var rootCmd = &cobra.Command{
 		case "":
 			fmt.Println(getData(args[0]))
 		case "POST":
-			fmt.Println("POST")
+			if dataVar == "" {
+				fmt.Println("No data was given for POST request.")
+			}
+			fmt.Println(postData(args[0], dataVar))
 		case "PUT":
 			fmt.Println("PUT")
 		case "GET":
@@ -53,6 +59,7 @@ func init() {
 
 	rootCmd.Flags().StringVarP(&headerVar, "header", "H", "", "Variable for passing header.")
 	rootCmd.Flags().StringVarP(&protocolVar, "protocol", "X", "", "Variable to choose protocol.")
+	rootCmd.Flags().StringVarP(&dataVar, "data", "d", "", "Variable for data.")
 }
 
 func getData(url string) (string, error) {
@@ -64,7 +71,7 @@ func getData(url string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("Could not resolve the URL")
 	}
-
+	// TODO: Put this into function
 	if headerVar != "" {
 		headerParts := strings.Split(headerVar, ": ")
 		if len(headerParts) != 2 {
@@ -78,6 +85,44 @@ func getData(url string) (string, error) {
 	response, err := http.DefaultClient.Do(request)
 	if err != nil {
 		return "", fmt.Errorf("Could not resolve the URL")
+	}
+	responseBytes, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return "", fmt.Errorf("Could not resolve the Response")
+	}
+	return string(responseBytes), nil
+}
+
+func postData(url string, data string) (string, error) {
+	postBody, err := json.Marshal(data)
+	if err != nil {
+		return "", fmt.Errorf("Can't convert data to json")
+	}
+	fmt.Println(data)
+	responseBody := bytes.NewBuffer(postBody)
+
+	request, err := http.NewRequest(
+		http.MethodPost,
+		url,
+		responseBody,
+	)
+	if err != nil {
+		return "", fmt.Errorf("Could not resolve the URL")
+	}
+	// TODO: Put this into function
+	if headerVar != "" {
+		headerParts := strings.Split(headerVar, ": ")
+		if len(headerParts) != 2 {
+			return "", fmt.Errorf("Header is not set right.")
+		}
+		headerHead := headerParts[0]
+		headerTail := headerParts[1]
+		request.Header.Add(headerHead, headerTail)
+	}
+
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		return "", fmt.Errorf("Could not resolve the Response")
 	}
 	responseBytes, err := ioutil.ReadAll(response.Body)
 	if err != nil {
