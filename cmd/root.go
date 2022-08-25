@@ -132,7 +132,7 @@ func putData(url string, data string) (string, error) {
 	responseBody := bytes.NewBuffer(postBody)
 
 	request, err := http.NewRequest(
-		http.MethodPost,
+		http.MethodPut,
 		url,
 		responseBody,
 	)
