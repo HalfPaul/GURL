@@ -1,13 +1,13 @@
 package cmd
 
 import (
+	"GURL/utils"
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
-	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -36,7 +36,10 @@ var rootCmd = &cobra.Command{
 			}
 			fmt.Println(postData(args[0], dataVar))
 		case "PUT":
-			fmt.Println("PUT")
+			if dataVar == "" {
+				fmt.Println("No data was given for PUT request.")
+			}
+			fmt.Println(putData(args[0], dataVar))
 		case "GET":
 			fmt.Println(getData(args[0]))
 		default:
@@ -72,14 +75,9 @@ func getData(url string) (string, error) {
 		return "", fmt.Errorf("Could not resolve the URL")
 	}
 	// TODO: Put this into function
-	if headerVar != "" {
-		headerParts := strings.Split(headerVar, ": ")
-		if len(headerParts) != 2 {
-			return "", fmt.Errorf("Header is not set right.")
-		}
-		headerHead := headerParts[0]
-		headerTail := headerParts[1]
-		request.Header.Add(headerHead, headerTail)
+	err = utils.HandleHeaders(headerVar, request)
+	if err != nil {
+		return "", err
 	}
 
 	response, err := http.DefaultClient.Do(request)
@@ -109,15 +107,42 @@ func postData(url string, data string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("Could not resolve the URL")
 	}
-	// TODO: Put this into function
-	if headerVar != "" {
-		headerParts := strings.Split(headerVar, ": ")
-		if len(headerParts) != 2 {
-			return "", fmt.Errorf("Header is not set right.")
-		}
-		headerHead := headerParts[0]
-		headerTail := headerParts[1]
-		request.Header.Add(headerHead, headerTail)
+	err = utils.HandleHeaders(headerVar, request)
+	if err != nil {
+		return "", err
+	}
+
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		return "", fmt.Errorf("Could not resolve the Response")
+	}
+	responseBytes, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return "", fmt.Errorf("Could not resolve the Response")
+	}
+	return string(responseBytes), nil
+}
+
+func putData(url string, data string) (string, error) {
+	postBody, err := json.Marshal(data)
+	if err != nil {
+		return "", fmt.Errorf("Can't convert data to json")
+	}
+	fmt.Println(data)
+	responseBody := bytes.NewBuffer(postBody)
+
+	request, err := http.NewRequest(
+		http.MethodPost,
+		url,
+		responseBody,
+	)
+	if err != nil {
+		return "", fmt.Errorf("Could not resolve the URL")
+	}
+
+	err = utils.HandleHeaders(headerVar, request)
+	if err != nil {
+		return "", err
 	}
 
 	response, err := http.DefaultClient.Do(request)
